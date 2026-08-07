@@ -76,7 +76,7 @@ function makeRequestToExtension<
  */
 function isLoggedin() {
     try {
-        return document.getElementsByClassName("usermenu")[0].children[0].className.indexOf("login") === -1;
+        return document.getElementsByClassName("usermenu")[0]?.children[0]?.className.indexOf("login") === -1;
     } catch (e) {
         // 九州大学のログインページ対策
         return false;
@@ -91,7 +91,7 @@ async function changeTitle() {
         if (document.getElementsByClassName("page-header-headings").length === 0) {
             title = document.getElementById("page-header")?.getElementsByTagName("h2")[0];
         } else {
-            title = document.getElementsByClassName("page-header-headings")[0].getElementsByTagName("h1")[0];
+            title = document.getElementsByClassName("page-header-headings")[0]?.getElementsByTagName("h1")[0];
         }
         if (title) {
             title.classList.add('pr-2', 'mb-2');
@@ -140,7 +140,7 @@ function minimizeNewsFeed() {
             title.innerText = "サイトニュース (コンパクト版)";
         }
         const lastlink = newsForumEl.lastElementChild?.lastElementChild as HTMLAnchorElement;
-        const subscribeButton = newsForumEl.getElementsByClassName("subscribelink")[0].children[0] as HTMLAnchorElement;
+        const subscribeButton = newsForumEl.getElementsByClassName("subscribelink")[0]?.children[0] as HTMLAnchorElement;
         subscribeButton.innerText = "長いお知らせ達を読む";
         subscribeButton.href = lastlink.href;
         const articles = newsForumEl.querySelectorAll("article.forum-post-container") as NodeListOf<HTMLDivElement>;
@@ -340,6 +340,7 @@ async function showUpcomingAsignments() {
             const errorEl = document.getElementById("moodle_plus_upcoming_assignments_fetch_error");
             if (!errorEl) return;
             const errorElText = errorEl.getElementsByTagName("span")[0];
+            if (!errorElText) return;
 
             const reloadButton = document.createElement("a");
             reloadButton.href = "#";
@@ -444,7 +445,7 @@ async function showUpcomingAsignments() {
 
                 if (event.eventtype === 'open') {
                     const existingEventIndex = acc.findIndex((e) => e.instanceId === event.instance);
-                    if (existingEventIndex !== -1) {
+                    if (existingEventIndex !== -1 && acc[existingEventIndex] != null) {
                         acc[existingEventIndex] = {
                             ...acc[existingEventIndex],
                             startDate: event.timestart * 1000,
@@ -465,7 +466,7 @@ async function showUpcomingAsignments() {
                     }
                 } else {
                     const existingEventIndex = acc.findIndex((e) => e.instanceId === event.instance);
-                    if (existingEventIndex !== -1) {
+                    if (existingEventIndex !== -1 && acc[existingEventIndex] != null) {
                         acc[existingEventIndex] = {
                             ...acc[existingEventIndex],
                             dueDate: (event.timestart + event.timeduration) * 1000,
@@ -527,9 +528,9 @@ async function showUpcomingAsignments() {
                 const dueDate = new Date(assignment.dueDate);
                 let dueDateString = `${dueDate.getMonth() + 1}月${dueDate.getDate()}日 ${dateToString(dueDate, false)}`;
                 const hasNotStarted = assignment.startDate != null && assignment.startDate > Date.now();
-                const hasNotSubmitted = (!hasNotStarted || assignment.actionAvailable === false) && assignment.hasSubmitted === false;
+                const hasNotSubmitted = (!hasNotStarted || assignment.actionAvailable === false) && (assignment.hasSubmitted === false || assignment.hasSubmitted === 'improvable');
                 const startDateInstance = assignment.startDate ? new Date(assignment.startDate) : null;
-                if (startDateInstance) {
+                if (startDateInstance && assignment.startDate !== assignment.dueDate) {
                     const startDateString = `${startDateInstance.getMonth() + 1}月${startDateInstance.getDate()}日 ${dateToString(startDateInstance, false)}`;
                     dueDateString += ` (${startDateString} 開始)`;
                 }
@@ -541,6 +542,8 @@ async function showUpcomingAsignments() {
                         return '開始前';
                     } else if (assignment.actionAvailable === false) {
                         return 'まだ提出できないかも';
+                    } else if (assignment.hasSubmitted === 'improvable') {
+                        return '再受験可能';
                     } else if (assignment.hasSubmitted === true) {
                         if (isPartial) {
                             return '<div class="d-inline-block spinner-border spinner-border-sm mr-1" role="status"><span class="sr-only">Loading...</span></div>提出状況を確認中';
@@ -552,13 +555,13 @@ async function showUpcomingAsignments() {
                     }
                 })();
 
-                return `<div class="card my-2" ${hasNotSubmitted && 'style="border-color: #f0ad4e; box-shadow: inset 0 0 0 3px #f0ad4e;"'}>
+                return `<div class="card my-2" ${hasNotSubmitted ? 'style="border-color: #f0ad4e; box-shadow: inset 0 0 0 3px #f0ad4e;"' : ''}>
 <div class="card-body">
     <h6 class="card-subtitle" style="margin-top: 0;">${assignment.courseName}</h6>
     <h5 class="card-title">${assignment.assignmentTitle}</h5>
     <div style="display: flex; justify-content: space-between; align-items: flex-end;">
         <h6 class="card-subtitle mb-2 text-muted">${dueDateString}<br/>残り時間>> <span class="left_realtime_clock" data-moodle-plus-event-id="${assignment.eventId}"></span></h6>
-        <a href="${assignment.url}" class="btn btn-${hasNotSubmitted ? 'primary' : 'secondary'} num-${i}" style="display: flex; align-items: center; ${(hasNotSubmitted) && 'font-weight: 700;'}">${buttonText}</a>
+        <a href="${assignment.url}" class="btn btn-${hasNotSubmitted ? 'primary' : 'secondary'} num-${i}" style="display: flex; align-items: center; ${hasNotSubmitted ? 'font-weight: 700;' : ''}">${buttonText}</a>
     </div>
 </div>
 </div>`;
@@ -579,19 +582,23 @@ async function showUpcomingAsignments() {
          * @param html HTML文字列
          * @param instanceId インスタンスID（モジュールのID）
          */
-        function determineStatusByHtml(html: string, instanceId: number) {
+        function determineStatusByHtml(html: string, instanceId: number): ParsedAssignments['hasSubmitted'] {
             try {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
 
                 // 課題・テストの提出状況
                 const assignmentState = (doc.getElementsByClassName("submissionstatussubmitted cell c1 lastcol").length > 0) ? true : false;
-                // 複数回受験可能なテストの提出状況
-                const quizState = (doc.querySelectorAll(".quizattemptsummary tbody>tr").length > 0) ? true : false;
+                // 複数回受験可能なテストの提出状況（Moodle 4.2以降はテーブル型ではなくカード型レイアウトになる）
+                const quizState = (doc.querySelectorAll(".quizattemptsummary tbody>tr").length > 0) || (doc.querySelectorAll("table.quizreviewsummary").length > 0);
                 // アンケートの提出状況
                 const questionnaireState = (doc.getElementsByClassName("yourresponse").length > 0) ? true : false;
 
-                console.log(`[Moodle Plus] Submission Status for ${instanceId}: `, { assignmentState, questionnaireState });
+                console.log(`[Moodle Plus] Submission Status for ${instanceId}: `, { assignmentState, quizState, questionnaireState });
+
+                if (quizState && isImprovableQuiz(doc)) {
+                    return 'improvable';
+                }
 
                 return assignmentState || quizState || questionnaireState;
             } catch (e) {
@@ -601,12 +608,28 @@ async function showUpcomingAsignments() {
         }
 
         /**
+         * 評定方法が「最高評点」のテストで、まだ満点に達しておらず再受験できる状態かを判定
+         * @param doc テストページのDocument
+         */
+        function isImprovableQuiz(doc: Document): boolean {
+            if (!doc.querySelector('.quizinfo')?.textContent?.includes('最高評点')) return false;
+            // 再受験ボタンがない場合（受験回数の上限に達した場合など）は対象外
+            if (doc.querySelector('.quizstartbuttondiv [type="submit"]') == null) return false;
+            const match = doc.getElementById('feedback')?.textContent?.match(/最高評点\s*:\s*([\d,.]+)\s*\/\s*([\d,.]+)/);
+            if (!match || match.length < 3) return false;
+            const best = parseFloat(match[1]!.replace(/,/g, ''));
+            const max = parseFloat(match[2]!.replace(/,/g, ''));
+            if (Number.isNaN(best) || Number.isNaN(max)) return false;
+            return best < max;
+        }
+
+        /**
          * 各課題ページにアクセスして提出状況を取得（Promise.allで同時並行で取得して高速化を図る）
          * @param assignments 課題データ
          * @param instanceIds 提出状況を更新したいインスタンスID（モジュールのID）のリスト
          */
         async function fetchSubmissionStatuses(assignments: ParsedAssignments[], instanceIds?: number[]) {
-            type SubmissionStatus = { instanceId: number, hasSubmitted: boolean | 'unknown' };
+            type SubmissionStatus = { instanceId: number, hasSubmitted: ParsedAssignments['hasSubmitted'] };
 
             const submissionStatuses: SubmissionStatus[] = await Promise.allSettled(assignments
                 .filter((assignment) => {

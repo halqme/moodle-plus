@@ -24,7 +24,7 @@ export default defineContentScript({
                     if (pos === posEnd) {
                         const lines = textarea.value.slice(0, pos).split('\n');
                         const currentLine = lines[lines.length - 1];
-                        const currentLineSpaces = currentLine.match(/^\s+/);
+                        const currentLineSpaces = currentLine?.match(/^\s+/) ?? null;
                         const posDelta = currentLineSpaces ? currentLineSpaces[0].length : 0;
                         ev.preventDefault();
                         textarea.value = textarea.value.slice(0, pos) + '\n' + (currentLineSpaces ? currentLineSpaces[0] : '') + textarea.value.slice(pos);

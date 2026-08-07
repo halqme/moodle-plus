@@ -8,5 +8,6 @@ export type ParsedAssignments = {
     dueDate: number;
     url: string;
     actionAvailable?: boolean;
-    hasSubmitted: boolean | 'unknown';
+    /** `'improvable'`: 受験済みだが「最高評点」方式で満点に達しておらず、再受験できる状態 */
+    hasSubmitted: boolean | 'unknown' | 'improvable';
 };

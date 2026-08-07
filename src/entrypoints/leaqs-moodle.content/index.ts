@@ -38,8 +38,7 @@ export default defineContentScript({
                     const quizData = extractQuizElements();
                     const pageNavbar = document.querySelector("#page-navbar");
                     const className = pageNavbar?.querySelector("a")?.title ?? "";
-                    const sectionName =
-                        pageNavbar?.querySelector("span")?.textContent ?? "";
+                    const sectionName = pageNavbar?.querySelector("span")?.textContent ?? "";
                     browser.runtime.sendMessage({
                         action: "formatAndDisplayQuiz",
                         quizData: quizData,
@@ -54,9 +53,7 @@ export default defineContentScript({
 
         function extractQuizElements() {
             const quizzes: MeaQsQuiz[] = [];
-            const quizContainers = document.querySelectorAll(
-                ".fcontainer.clearfix"
-            );
+            const quizContainers = document.querySelectorAll(".fcontainer.clearfix");
 
             quizContainers.forEach((container, index) => {
                 const quiz: MeaQsQuiz = {
@@ -64,15 +61,10 @@ export default defineContentScript({
                     question: [],
                 };
                 // 質問の抽出
-                const questionNodes =
-                    container.querySelector(".form-control-static .text_to_html")
-                        ?.childNodes ?? [];
+                const questionNodes = container.querySelector(".form-control-static .text_to_html")?.childNodes ?? [];
                 if (questionNodes.length >= 0) {
                     for (let i = 0; i < questionNodes.length; i += 1) {
-                        const questionNode = questionNodes[i]?.textContent?.replace(
-                            /\s+/g,
-                            ""
-                        );
+                        const questionNode = questionNodes[i]?.textContent?.replace(/\s+/g, "");
                         if (questionNode !== undefined) {
                             quiz.question.push(questionNode);
                         }
@@ -87,7 +79,7 @@ export default defineContentScript({
                 quiz.choices = [];
                 if (choiceElements) {
                     for (let i = 0; i < choiceElements.length; i += 1) {
-                        const choices = choiceElements[i];
+                        const choices = choiceElements[i]!;
                         const choiceChilds = choices.childNodes;
                         const text = [];
                         for (let j = 0; j < choiceChilds.length; j += 1) {
@@ -96,13 +88,12 @@ export default defineContentScript({
                                 const textNode = textChild.getElementsByTagName("p");
                                 if (textNode.length !== 0) {
                                     for (let k = 0; k < textNode.length; k += 1) {
-                                        text.push(textNode[k].textContent);
+                                        text.push(textNode[k]!.textContent);
                                     }
                                 } else {
                                     const textToHtmlElement = textChild.querySelector(".text_to_html");
                                     if (textToHtmlElement) {
-                                        const textContent =
-                                            textToHtmlElement?.textContent;
+                                        const textContent = textToHtmlElement?.textContent;
                                         if (textContent) {
                                             text.push(textContent);
                                         }
@@ -127,24 +118,18 @@ export default defineContentScript({
                                 if (textChild instanceof HTMLElement) {
                                     const textNode = textChild.getElementsByTagName("p");
                                     if (textNode.length !== 0) {
-                                        for (
-                                            let k = 0;
-                                            k < textNode.length;
-                                            k += 1
-                                        ) {
-                                            text.push(textNode[k].textContent);
+                                        for (let k = 0; k < textNode.length; k++) {
+                                            text.push(textNode[k]!.textContent);
                                         }
                                     } else {
                                         const textToHtmlElement = textChild.querySelector(".text_to_html");
                                         if (textToHtmlElement) {
-                                            const textContent =
-                                                textToHtmlElement?.textContent;
+                                            const textContent = textToHtmlElement?.textContent;
                                             if (textContent) {
                                                 text.push(textContent);
                                             }
                                         } else {
-                                            const textContent =
-                                                textChild.textContent;
+                                            const textContent = textChild.textContent;
                                             if (textContent) {
                                                 text.push(textContent);
                                             }
@@ -158,21 +143,8 @@ export default defineContentScript({
                 }
 
                 // 選択肢問題の解答を取得
-                if (
-                    container.querySelector(
-                        ".answer-correct .form-control-static"
-                    ) ||
-                    container.querySelector(
-                        ".answer-incorrect .form-control-static"
-                    )
-                ) {
-                    const answerElement =
-                        container.querySelector(
-                            ".answer-correct .form-control-static"
-                        ) ||
-                        container.querySelector(
-                            ".answer-incorrect .form-control-static"
-                        );
+                const answerElement = container.querySelector(".answer-correct .form-control-static") || container.querySelector(".answer-incorrect .form-control-static");
+                if (answerElement) {
                     const answerChilds = answerElement?.childNodes ?? [];
                     const text = [];
                     for (let j = 0; j < answerChilds.length; j += 1) {
@@ -181,13 +153,12 @@ export default defineContentScript({
                             const textNode = textChild.getElementsByTagName("p");
                             if (textNode.length !== 0) {
                                 for (let k = 0; k < textNode.length; k += 1) {
-                                    text.push(textNode[k].textContent);
+                                    text.push(textNode[k]!.textContent);
                                 }
                             } else {
                                 const textToHtmlElement = textChild.querySelector(".text_to_html");
                                 if (textToHtmlElement) {
-                                    const textContent =
-                                        textToHtmlElement?.textContent;
+                                    const textContent = textToHtmlElement?.textContent;
                                     if (textContent) {
                                         text.push(textContent);
                                     }
@@ -218,9 +189,7 @@ export default defineContentScript({
 
                 // 記述問題の解答例と回答の抽出
                 if (quiz.choices.length === 0) {
-                    const answerElements = container.querySelectorAll(
-                        ".form-control-static .text_to_html"
-                    );
+                    const answerElements = container.querySelectorAll(".form-control-static .text_to_html");
                     if (answerElements[1]) {
                         const correctChilds = answerElements[1].childNodes;
                         const text = [];
@@ -231,13 +200,12 @@ export default defineContentScript({
                                 const textNode = textChild.querySelectorAll("p");
                                 if (textNode.length !== 0) {
                                     for (let k = 0; k < textNode.length; k += 1) {
-                                        text.push(textNode[k].textContent);
+                                        text.push(textNode[k]!.textContent);
                                     }
                                 } else {
                                     const textToHtmlElement = textChild.querySelector(".text_to_html");
                                     if (textToHtmlElement) {
-                                        const textContent =
-                                            textToHtmlElement?.textContent;
+                                        const textContent = textToHtmlElement?.textContent;
                                         if (textContent) {
                                             text.push(textContent);
                                         }
@@ -263,13 +231,12 @@ export default defineContentScript({
                                 const textNode = textChild.querySelectorAll("p");
                                 if (textNode.length !== 0) {
                                     for (let k = 0; k < textNode.length; k += 1) {
-                                        text.push(textNode[k].textContent);
+                                        text.push(textNode[k]!.textContent);
                                     }
                                 } else {
                                     const textToHtmlElement = textChild.querySelector(".text_to_html");
                                     if (textToHtmlElement) {
-                                        const textContent =
-                                            textToHtmlElement?.textContent;
+                                        const textContent = textToHtmlElement?.textContent;
                                         if (textContent) {
                                             text.push(textContent);
                                         }
